@@ -5,16 +5,19 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+// Using no prescale, timer maxes out at ~65.5ms
+// With prescale of 8 (next available prescale) max = 524 ms
+// This delay will use a prescale of 8
 #define DELAY_MS 100
-#define CLKS_PER_DELAY F_CPU*DELAY_MS/1000//F_CPU (clks/sec) * DELAY_MS(ms) / (1000 ms/sec) = clks
+#define CLKS_PER_DELAY (F_CPU>>3)*DELAY_MS/1000//F_CPU (clks/sec) * DELAY_MS(ms) / (1000 ms/sec) = clks
+// These will not use any prescale
 #define CLKS_PER_10MS F_CPU*10/1000 // 10 millis required to send ultrasonic pulse
-#define TIMEOUT 10 // ms
-#define CLKS_PER_TIMEOUT (F_CPU*TIMEOUT/1000) // 1/2 second time-out
+#define TIMEOUT 20 // ms
+#define CLKS_PER_TIMEOUT ((F_CPU)*TIMEOUT/1000) // 
 
-// Speed of sound, v= 1125.33fps*12ft/in = 13503.96in/s
-// dist = v*time -> tme = dist/v, but there and back so t = 2*dist/v
+// Dist = uS/148 -> ms = Dist(in)*148(us/in)
 #define PROX_DIST 5 // distance (inches)
-#define PROX_TIME (PROX_DIST<<2)/13504
+#define PROX_TIME PROX_DIST*148
 
 // TCCR1A
 #define COM1A1 7 // Leave both ports to normal operation
@@ -64,12 +67,7 @@
 #define INTF1 1
 
 
-// used with uint8_t ultraSonicStatus in four_ultrasonics.c
-#define USSS 7 // status bit for if ultrasonic is sending
-#define UST1 0 // which sensor it is currently using
-#define UST2 1
-#define UST3 2
-#define UST4 3
+
 
 // Testing stuff
 #define TEST_PORT PORTD
@@ -79,8 +77,29 @@
 
 void initializeTimer16();
 void initializeUltraSonic();
+
 void stopTimer16();
 void startTimer16();
+void startTimer16_PS8();
+void resetTimer16();
+void setCompare1A(uint16_t comp);
+
+void enable(uint8_t port, uint8_t pin);
+void disable(uint8_t port, uint8_t pin);
+uint8_t isEnabled(uint8_t port, uint8_t pin);
+/* Ultrasonic stages:
+	1 - Enable trigger, reset timer, OCR1A = 10ms
+	2 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
+	3 - Waiting for echo to go high 
+	  - Could also timeout -> ignore time/dist, continue to next sensor
+	4 - Waiting for echo to go low
+*/
+uint8_t isStage(uint8_t stage);
+void nextStage();
+uint8_t getSensorTrigPin();
+void moveToNextSensor();
+
+void setDist();
 
 uint16_t getDist1();
 uint16_t getDist2();

@@ -2,7 +2,9 @@
 #include <avr/interrupt.h>
 #include "four_ultrasonics.h"
 
-
+// The stage in getting distance from a sensor is stored in the 2 MSB
+// The current sensor is the 2 LSB. (this method can be expanded to more
+// sensors with only slight modifications);
 uint8_t ultraSonicStatus = 0x00;
 
 volatile uint16_t dist1 = 0x0000;
@@ -46,11 +48,9 @@ void initializeUltraSonic(){
 
 
 	// clear timer, set compare to delay time, and start timer
-	TCNT1H = 0x00;
-	TCNT1L = 0x00;
-	OCR1AH = (uint8_t)(((uint16_t)CLKS_PER_DELAY) >> 8);
-	OCR1AL = (uint8_t)((CLKS_PER_DELAY));
-	startTimer16();
+	resetTimer16();
+	setCompare1A(CLKS_PER_DELAY);
+	startTimer16_PS8();
 }
 
 void stopTimer16(){
@@ -60,53 +60,100 @@ void startTimer16(){
 	TCCR1B |= (1 << CS10);
 	TCCR1B &= ~(1 << CS12) & ~(1 << CS11);
 }
+void startTimer16_PS8(){
+	// CS1(2:0) = 010
+	TCCR1B |= (1 << CS11);
+	TCCR1B &= ~(1 << CS12) & ~(1 << CS10);
+
+}
+void setCompare1A(uint16_t comp){
+	OCR1AH = (comp >> 8);
+	OCR1AL = comp;
+}
+void resetTimer16(){
+	TCNT1H = 0x00;
+	TCNT1L = 0x00;
+}
+
+void enable(uint8_t port, uint8_t pin){
+	port |= (1 << pin);
+}
+void disable(uint8_t port, uint8_t pin){
+	port &= ~(1 << pin);
+}
+uint8_t isEnabled(uint8_t port, uint8_t pin){
+	return port&(1<<pin);
+}
+/* Ultrasonic stages:
+	0 - Enable trigger, reset timer, OCR1A = 10ms
+	1 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
+	2 - Waiting for echo to go high 
+	  - Could also timeout -> ignore time/dist, continue to next sensor
+	3 - Waiting for echo to go low
+*/
+uint8_t isStage(uint8_t stage){
+	return (((ultraSonicStatus&0xC0) >> 6) == stage);
+}
+void nextStage(){
+	uint8_t next = 0x03&(((ultraSonicStatus&0xC0) >> 6)+1); // increment the current stage
+	ultraSonicStatus &= 0x3F;	//clear the stage section
+	ultraSonicStatus |= (next << 6); // place the stage in the correct position
+
+}
+
+uint8_t getSensorTrigPin(){
+	switch (ultraSonicStatus&0x03){ //current sensor is stored in 2 LSB
+		case 0: return TRIG1;
+		case 1: return TRIG2;
+		case 2: return TRIG3;
+		case 3: return TRIG4;
+	}
+	// default
+	return TRIG1;
+}
+void setDist(){
+	switch (ultraSonicStatus&0x03){ //current sensor is stored in 2 LSB
+		case 0: dist1 = TCNT1L | (TCNT1H << 8);
+				break;
+		case 1: dist2 = TCNT1L | (TCNT1H << 8);
+				break;
+		case 2: dist3 = TCNT1L | (TCNT1H << 8);
+				break;
+		case 3: dist4 = TCNT1L | (TCNT1H << 8);
+				break;
+	}
+}
+
+void moveToNextSensor(){
+	uint8_t next = 0xFC&((ultraSonicStatus&0x03)+1);// (++sensor)%4
+	ultraSonicStatus &= 0xFC;
+	ultraSonicStatus |= next;
+}
+
+
 
 // INT1 ISR -> for echo pin
 ISR(INT1_vect){
-	TEST_PORT &= (1 << TEST_PIN); //flag 
-	cli();
+	cli(); // prevent other things from happening
 
-	// if the echo pin is high
-	if (ECHO_PIN_PORT & (1 << ECHO_PIN)){
-		// clear and start the timer
-		TCNT1H = 0x00;
-		TCNT1L = 0x00;
-		startTimer16();
-	}	
-	else{
+	// waiting for echo to go high (just went high)
+	if (isStage(2)){
 		stopTimer16();
-
-		
-		// correct ultraSonicStatus Status & get distance
-		ultraSonicStatus |= (1 << USSS);
-		if (ultraSonicStatus & (1 << UST1)){
-			ultraSonicStatus &= ~(1 << UST1);
-			ultraSonicStatus |= (1 << UST2);
-			dist1 = (TCNT1H << 8)|TCNT1L;
-		}
-		if (ultraSonicStatus & (1 << UST2)){
-			ultraSonicStatus &= ~(1 << UST2);
-			ultraSonicStatus |= (1 << UST3);
-			dist2 = (TCNT1H << 8)|TCNT1L;
-		}
-		if (ultraSonicStatus & (1 << UST3)){
-			ultraSonicStatus &= ~(1 << UST3);
-			ultraSonicStatus |= (1 << UST4);
-			dist3 = (TCNT1H << 8)|TCNT1L;
-		}
-		if (ultraSonicStatus & (1 << UST4)){
-			ultraSonicStatus &= ~(1 << UST4);
-			ultraSonicStatus |= (1 << UST1);
-			dist4 = (TCNT1H << 8)|TCNT1L;
-		}
-		// clear the timer and start it again, so it can trigger another sensor		
-		TCNT1H = 0x00;
-		TCNT1L = 0x00;
-		OCR1AH = (uint8_t)(((uint16_t)CLKS_PER_DELAY) >> 8);
-		OCR1AL = (uint8_t)((CLKS_PER_DELAY));
-		startTimer16();
-
+		resetTimer16();
+		setCompare1A(CLKS_PER_TIMEOUT);
+		nextStage();
+		startTimer16(); // start clk with no prescale
 	}
+	// if waiting for echo to go low (just went low)
+	else if(isStage(3)){
+		stopTimer16();
+		setDist();
+		setCompare1A(CLKS_PER_DELAY);
+		nextStage();
+		moveToNextSensor();
+		startTimer16_PS8(); // slow timer for longer delay
+	}
+
 
 	sei();
 }
@@ -114,113 +161,31 @@ ISR(INT1_vect){
 // TIMER1_COMPA ISR -> For sending out a trigger and checking for timeouts
 ISR(TIMER1_COMPA_vect){
 	cli(); //ensure no interrupts
-
-	TEST_PORT |= (1 << TEST_PIN); //flag 
-
-	// if sending a pulse
-	if (ultraSonicStatus & (1 << USSS)){
-		
-		// choose the correct trigger,
-		// set high, change new delay for 10ms
-		// reset tnct1h/l and dddclear USSS bit
-		if (ultraSonicStatus & (1 << UST1)){
-			// if the trigger pin is already high
-			if (TRIG_PORT & (1 << TRIG1)){
-				TRIG_PORT &= ~(1 << TRIG1);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_TIMEOUT)));
-				OCR1AL = (uint8_t)(CLKS_PER_TIMEOUT);
-			}
-			else{
-				TRIG_PORT |= (1 << TRIG1);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_10MS)));
-				OCR1AL = (uint8_t)(CLKS_PER_10MS);
-	
-			}
+		// delay has completed, turn on trigger and get pulse started
+		if(isStage(0)){
+			stopTimer16();
+			enable(TRIG_PORT, getSensorTrigPin());
+			setCompare1A(CLKS_PER_10MS);
+			nextStage();
+			startTimer16();
 		}
-		if (ultraSonicStatus & (1 << UST2)){
-			if (TRIG_PORT & (1 << TRIG2)){
-				TRIG_PORT &= ~(1 << TRIG2);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_TIMEOUT)));
-				OCR1AL = (uint8_t)(CLKS_PER_TIMEOUT);
-			}
-			else{
-				TRIG_PORT |= (1 << TRIG2);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_10MS)));
-				OCR1AL = (uint8_t)(CLKS_PER_10MS);
-	
-			}
-	
+		// 10ms pulse completed, clear trigger and set up for echo/timeout
+		else if (isStage(1)){
+			stopTimer16();
+			disable(TRIG_PORT, getSensorTrigPin());
+			setCompare1A(CLKS_PER_TIMEOUT);
+			nextStage();
+			startTimer16();
 		}
-		if (ultraSonicStatus & (1 << UST3)){
-			if (TRIG_PORT & (1 << TRIG3)){
-				TRIG_PORT &= ~(1 << TRIG3);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_TIMEOUT)));
-				OCR1AL = (uint8_t)(CLKS_PER_TIMEOUT);
-			}
-			else{
-				TRIG_PORT |= (1 << TRIG3);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_10MS)));
-				OCR1AL = (uint8_t)(CLKS_PER_10MS);
-	
-			}
-	
-		}
-		if (ultraSonicStatus & (1 << UST4)){
-			if (TRIG_PORT & (1 << TRIG4)){
-				TRIG_PORT &= ~(1 << TRIG4);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_TIMEOUT)));
-				OCR1AL = (uint8_t)(CLKS_PER_TIMEOUT);
-			}
-			else{
-				TRIG_PORT |= (1 << TRIG4);
-				OCR1AH = (uint8_t)(((uint16_t)(CLKS_PER_10MS)));
-				OCR1AL = (uint8_t)(CLKS_PER_10MS);
-	
-			}
-	
+		// check for timeout
+		else if (isStage(2) || isStage(3)){
+			stopTimer16();
+			setCompare1A(CLKS_PER_DELAY);
+			nextStage();
+			moveToNextSensor();
+			startTimer16_PS8();
 		}
 
-		// regardless of whether the trigger pin was high or low
-		// the timer needs to be reset and change the status to 
-		// waiting for an echo
-		TCNT1H = 0x00;
-		TCNT1L = 0x00;
-		startTimer16();
-		ultraSonicStatus &= ~(1 << USSS);
-		
-	}
-	// if waiting for a the echo, check for timeout
-	// Move sensor to the next one hold old value since it likely won't 
-	// change too much and if something is wrong with that sensor, we 
-	// cannot have it continuously timing out and miss data from the other sensors
-	
-	else{
-		TCNT1H = 0x00;
-		TCNT1L = 0x00;
-		OCR1AH = (uint8_t)(((uint16_t)CLKS_PER_DELAY) >> 8);
-		OCR1AH = (uint8_t)((CLKS_PER_DELAY));
-		// correct ultraSonicStatus Status
-		ultraSonicStatus |= (1 << USSS);
-		if (ultraSonicStatus & (1 << UST1)){
-			ultraSonicStatus &= ~(1 << UST1);
-			ultraSonicStatus |= (1 << UST2);
-		}
-		if (ultraSonicStatus & (1 << UST2)){
-			ultraSonicStatus &= ~(1 << UST2);
-			ultraSonicStatus |= (1 << UST3);
-		}
-		if (ultraSonicStatus & (1 << UST3)){
-			ultraSonicStatus &= ~(1 << UST3);
-			ultraSonicStatus |= (1 << UST4);
-		}
-		if (ultraSonicStatus & (1 << UST4)){
-			ultraSonicStatus &= ~(1 << UST4);
-			ultraSonicStatus |= (1 << UST1);
-		}
-
-		startTimer16();
-			
-	}
 	sei();
 }
 

@@ -16,6 +16,9 @@ int main(){
 
 	while(1){
 		sei();
+
+		if (getDist1() < 5) push(0x3C);
+		else push(0xC3);
 			
 	}
 

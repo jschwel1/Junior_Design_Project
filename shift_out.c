@@ -32,7 +32,7 @@ void initializeShiftReg(){
 
 void push(uint8_t data){
 	// no interrupts while pushing data
-	cli();
+	//cli();
 	uint8_t i;
 
 	// set the storage reg clk low when writing data
@@ -53,7 +53,7 @@ void push(uint8_t data){
 	STOR_REG_CLK_PORT &= ~(1 << STOR_REG_CLK);
 	
 	// done--interrupts can occur
-	sei();
+	// sei();
 }
 void push16(uint16_t data){
 	push(data&0x00FF);	// push out the lower 8 bits
