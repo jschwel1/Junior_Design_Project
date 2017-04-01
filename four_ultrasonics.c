@@ -130,62 +130,46 @@ void moveToNextSensor(){
 	ultraSonicStatus |= next;
 }
 
-
+void trigger(){
+	enable(TRIG_PORT, TRIG1);
+	_delay_ms(10);
+	disable(TRIG_PORT, TRIG1);
+}
 
 // INT1 ISR -> for echo pin
 ISR(INT1_vect){
-	cli(); // prevent other things from happening
+	enable(TRIG_PORT, TRIG2);
 
+	cli(); // prevent other things from happening
+	if (isEnabled(ECHO_PIN_PORT, ECHO_PIN)){
+		resetTimer16();
+		startTimer16();
+	}
+	else{
+		stopTimer16();
+		dist1 = TCNT1L | (TCNT1H << 4);
+
+	}
+	
+	disable(TRIG_PORT, TRIG2);
+/*
 	// waiting for echo to go high (just went high)
 	if (isStage(2)){
 		stopTimer16();
 		resetTimer16();
 		setCompare1A(CLKS_PER_TIMEOUT);
-		nextStage();
 		startTimer16(); // start clk with no prescale
 	}
 	// if waiting for echo to go low (just went low)
-	else if(isStage(3)){
+	else if(isEnabled(ECHO_PIN_PORT, ECHO_PIN)){
 		stopTimer16();
 		setDist();
 		setCompare1A(CLKS_PER_DELAY);
-		nextStage();
 		moveToNextSensor();
 		startTimer16_PS8(); // slow timer for longer delay
 	}
 
-
-	sei();
-}
-
-// TIMER1_COMPA ISR -> For sending out a trigger and checking for timeouts
-ISR(TIMER1_COMPA_vect){
-	cli(); //ensure no interrupts
-		// delay has completed, turn on trigger and get pulse started
-		if(isStage(0)){
-			stopTimer16();
-			enable(TRIG_PORT, getSensorTrigPin());
-			setCompare1A(CLKS_PER_10MS);
-			nextStage();
-			startTimer16();
-		}
-		// 10ms pulse completed, clear trigger and set up for echo/timeout
-		else if (isStage(1)){
-			stopTimer16();
-			disable(TRIG_PORT, getSensorTrigPin());
-			setCompare1A(CLKS_PER_TIMEOUT);
-			nextStage();
-			startTimer16();
-		}
-		// check for timeout
-		else if (isStage(2) || isStage(3)){
-			stopTimer16();
-			setCompare1A(CLKS_PER_DELAY);
-			nextStage();
-			moveToNextSensor();
-			startTimer16_PS8();
-		}
-
+*/
 	sei();
 }
 

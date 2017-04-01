@@ -6,6 +6,11 @@
 #include "four_ultrasonics.h"
 #include "shift_out.h"
 
+
+#define LED_PORT PORTD
+#define LED_PORT DDRD
+#define LED1 
+
 int main(){
 	initializeTimer16();
 	initializeUltraSonic();
@@ -16,9 +21,11 @@ int main(){
 
 	while(1){
 		sei();
+		_delay_ms(75);
+		trigger();
 
-		if (getDist1() < 5) push(0x3C);
-		else push(0xC3);
+		if (getDist1() < 200) enable(LED_PORT, LED1);
+		else disable(LED_PORT, LED1);
 			
 	}
 
