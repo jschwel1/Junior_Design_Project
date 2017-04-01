@@ -19,11 +19,11 @@ void initializeTimer16(){
 		& ~(1 << WGM11) & ~(1 << WGM10); // Normal Counter
 
 	TCCR1B &= ~(1 << WGM13) & ~(1 << WGM12) // Normal Counter
-		& ~(1 << ICNC1) & ~(1 << ICES1) // No input capture 
+		& ~(1 << ICNC1) & ~(1 << ICES1) // No input capture
 		& ~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10); // Timer initially stopped
 
 	TCCR1C &= ~(1 << FOC1A) & ~(1 << FOC1B);// They need to be 0 anyway
-	
+
 	TIMSK1 &= ~(1 << ICIE1) & ~(1 << TOIE1) & ~(1 << OCIE1B); // No Input Capture or overflow interrupts
 	TIMSK1 |= (1 << OCIE1A);// | (1 << OCIO1B); // Interrupt on compare outputs with A and B
 						 // Stored in OCR1AH|ORCR1AL, OCR1BH|OCR1BL
@@ -36,12 +36,12 @@ void initializeUltraSonic(){
 
 	EICRA |= (1 << ISC10);	// Set it to interrupt on any logical change on INT1
 	EICRA &= ~(1 << ISC11);
-	
+
 	EIMSK |= (1 << INT1); // enable interrupts
 	// TRIG Port
 	TRIG_PORT_DDR |= (1 << TRIG1) | (1 << TRIG2) | (1 << TRIG3) | (1 << TRIG4); // set TRIGs to
-										    // outputs	
-	TRIG_PORT &= ~(1 << TRIG1) & ~(1 << TRIG2) & ~(1 << TRIG3) & ~(1 << TRIG4); // Set all trigger low	
+										    // outputs
+	TRIG_PORT &= ~(1 << TRIG1) & ~(1 << TRIG2) & ~(1 << TRIG3) & ~(1 << TRIG4); // Set all trigger low
 
 	TEST_PORT_DDR |= (1 << TEST_PIN);
 	TEST_PORT &= ~(1 << TEST_PIN);
@@ -75,11 +75,11 @@ void resetTimer16(){
 	TCNT1L = 0x00;
 }
 
-void enable(uint8_t port, uint8_t pin){
-	port |= (1 << pin);
+void enable(volatile unsigned char *port, uint8_t pin){
+	*port |= (1 << pin);
 }
-void disable(uint8_t port, uint8_t pin){
-	port &= ~(1 << pin);
+void disable(volatile unsigned char *port, uint8_t pin){
+	*port &= ~(1 << pin);
 }
 uint8_t isEnabled(uint8_t port, uint8_t pin){
 	return port&(1<<pin);
@@ -87,7 +87,7 @@ uint8_t isEnabled(uint8_t port, uint8_t pin){
 /* Ultrasonic stages:
 	0 - Enable trigger, reset timer, OCR1A = 10ms
 	1 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
-	2 - Waiting for echo to go high 
+	2 - Waiting for echo to go high
 	  - Could also timeout -> ignore time/dist, continue to next sensor
 	3 - Waiting for echo to go low
 */
@@ -150,7 +150,7 @@ ISR(INT1_vect){
 		dist1 = TCNT1L | (TCNT1H << 4);
 
 	}
-	
+
 	disable(TRIG_PORT, TRIG2);
 /*
 	// waiting for echo to go high (just went high)

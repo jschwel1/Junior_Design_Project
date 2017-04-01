@@ -1,9 +1,11 @@
 #ifndef FOUR_ULTRASONICS_H
 #define FOUR_ULTRASONICS_H
-
+#ifndef F_CPU
 #define F_CPU 1000000UL
+#endif
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 // Using no prescale, timer maxes out at ~65.5ms
 // With prescale of 8 (next available prescale) max = 524 ms
@@ -13,7 +15,7 @@
 // These will not use any prescale
 #define CLKS_PER_10MS F_CPU*10/1000 // 10 millis required to send ultrasonic pulse
 #define TIMEOUT 20 // ms
-#define CLKS_PER_TIMEOUT ((F_CPU)*TIMEOUT/1000) // 
+#define CLKS_PER_TIMEOUT ((F_CPU)*TIMEOUT/1000) //
 
 // Dist = uS/148 -> ms = Dist(in)*148(us/in)
 #define PROX_DIST 5 // distance (inches)
@@ -22,14 +24,14 @@
 // TCCR1A
 #define COM1A1 7 // Leave both ports to normal operation
 #define COM1A0 6
-#define COM1B1 5 
+#define COM1B1 5
 #define COM1B0 4
 #define WGM11 1
 #define WGM10 0
 
 // TCCR1B
 #define ICNC1 7
-#define ICES1 6 
+#define ICES1 6
 #define WGM13 4
 #define WGM12 3
 #define CS12 2
@@ -84,13 +86,13 @@ void startTimer16_PS8();
 void resetTimer16();
 void setCompare1A(uint16_t comp);
 
-void enable(uint8_t port, uint8_t pin);
-void disable(uint8_t port, uint8_t pin);
+void enable(volatile unsigned char *port, uint8_t pin);
+void disable(volatile unsigned char *port, uint8_t pin);
 uint8_t isEnabled(uint8_t port, uint8_t pin);
 /* Ultrasonic stages:
 	1 - Enable trigger, reset timer, OCR1A = 10ms
 	2 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
-	3 - Waiting for echo to go high 
+	3 - Waiting for echo to go high
 	  - Could also timeout -> ignore time/dist, continue to next sensor
 	4 - Waiting for echo to go low
 */
