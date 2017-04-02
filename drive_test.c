@@ -16,9 +16,9 @@ int main(){
 
 	LED_PORT_DDRD |= (1<<LED1);
 	while(1){
-		enable(&LED_PORT,LED1);
+		enable(LED_PORT,LED1);
 		_delay_ms(200);
-		disable(&LED_PORT,LED1);
+		disable(LED_PORT,LED1);
 		_delay_ms(200);
 	}
 

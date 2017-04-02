@@ -69,13 +69,9 @@
 #define INTF1 1
 
 
-
-
-// Testing stuff
-#define TEST_PORT PORTD
-#define TEST_PORT_DDR DDRD
-#define TEST_PIN 0
-
+#define enable(port, pin) ((port) |= (1 << (pin)))
+#define disable(port, pin) ((port) &= ~(1 << (pin)))
+#define isEnabled(port, pin) (((port) & (1 << (pin))) != 0x00)
 
 void initializeTimer16();
 void initializeUltraSonic();
@@ -86,9 +82,9 @@ void startTimer16_PS8();
 void resetTimer16();
 void setCompare1A(uint16_t comp);
 
-void enable(volatile unsigned char *port, uint8_t pin);
-void disable(volatile unsigned char *port, uint8_t pin);
-uint8_t isEnabled(uint8_t port, uint8_t pin);
+//void enable(volatile unsigned char *port, uint8_t pin);
+//void disable(volatile unsigned char *port, uint8_t pin);
+//uint8_t isEnabled(uint8_t port, uint8_t pin);
 /* Ultrasonic stages:
 	1 - Enable trigger, reset timer, OCR1A = 10ms
 	2 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
