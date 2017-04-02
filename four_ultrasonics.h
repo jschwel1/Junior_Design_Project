@@ -71,7 +71,7 @@
 
 #define enable(port, pin) ((port) |= (1 << (pin)))
 #define disable(port, pin) ((port) &= ~(1 << (pin)))
-#define isEnabled(port, pin) (((port) & (1 << (pin))) != 0x00)
+#define isEnabled(port, pin) (((port) & (1 << (pin)))) 
 
 void initializeTimer16();
 void initializeUltraSonic();
@@ -96,7 +96,7 @@ uint8_t isStage(uint8_t stage);
 void nextStage();
 uint8_t getSensorTrigPin();
 void moveToNextSensor();
-
+void trigger();
 void setDist();
 
 uint16_t getDist1();

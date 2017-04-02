@@ -41,7 +41,11 @@ void initializeUltraSonic(){
 	// TRIG Port
 	TRIG_PORT_DDR |= (1 << TRIG1) | (1 << TRIG2) | (1 << TRIG3) | (1 << TRIG4); // set TRIGs to
 										    // outputs	
-	TRIG_PORT &= ~(1 << TRIG1) & ~(1 << TRIG2) & ~(1 << TRIG3) & ~(1 << TRIG4); // Set all trigger low	
+	// Turn off all trigger pins
+	disable(TRIG_PORT, TRIG1);
+	disable(TRIG_PORT, TRIG2);
+	disable(TRIG_PORT, TRIG3);
+	disable(TRIG_PORT, TRIG4);
 
 
 
@@ -138,38 +142,21 @@ void trigger(){
 
 // INT1 ISR -> for echo pin
 ISR(INT1_vect){
-	enable(TRIG_PORT, TRIG2);
+	
 
 	cli(); // prevent other things from happening
 	if (isEnabled(ECHO_PIN_PORT, ECHO_PIN)){
+		enable(TRIG_PORT, TRIG2);
 		resetTimer16();
 		startTimer16();
 	}
 	else{
 		stopTimer16();
 		dist1 = TCNT1L | (TCNT1H << 4);
-
+		disable(TRIG_PORT, TRIG2);
 	}
 	
-	disable(TRIG_PORT, TRIG2);
-/*
-	// waiting for echo to go high (just went high)
-	if (isStage(2)){
-		stopTimer16();
-		resetTimer16();
-		setCompare1A(CLKS_PER_TIMEOUT);
-		startTimer16(); // start clk with no prescale
-	}
-	// if waiting for echo to go low (just went low)
-	else if(isEnabled(ECHO_PIN_PORT, ECHO_PIN)){
-		stopTimer16();
-		setDist();
-		setCompare1A(CLKS_PER_DELAY);
-		moveToNextSensor();
-		startTimer16_PS8(); // slow timer for longer delay
-	}
-
-*/
+	
 	sei();
 }
 

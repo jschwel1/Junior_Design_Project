@@ -11,13 +11,13 @@ test: $(addsuffix .c, $(OUTPUT))
 	avr-gcc -g -Wall -mmcu=atmega328 -O1 $(FILES) -o $(OUTPUT)
 winprog: test
 		avr-objcopy -O ihex -R .eeprom -R .fuse -R .lock $(OUTPUT) $(OUTPUT).hex
-		avrdude -c buspirate -P/COM4 -p atmega328 -U flash:w:$(OUTPUT).hex
+		avrdude -c buspirate -P/COM1 -p atmega328 -U flash:w:$(OUTPUT).hex
 program: test
 	avrdude -c buspirate -P /dev/buspirate -p atmega328
 	avrdude -c buspirate -P /dev/buspirate -p atmega328 -U flash:w:$(OUTPUT)
 clean:
 	-rm $(OUTPUT)
-
+	-rm $(OUTPUT).hex
 
 
 
