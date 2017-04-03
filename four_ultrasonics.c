@@ -31,11 +31,15 @@ void initializeTimer16(){
 
 void initializeUltraSonic(){
 	// External Interrupt & ECHO Pin
-	ECHO_PIN_PORT_DDR &= ~(1 << ECHO_PIN);
-	ECHO_PIN_PORT |= (1 << ECHO_PIN); // Set pull up resistor high
+	ECHO_PIN_PORT_DDR &= ~(1 << ECHO_PIN) & ~(1<<2);
+	ECHO_PIN_PORT |= (1 << ECHO_PIN) | (1<<2); // Set pull up resistor high
+
 
 	EICRA |= (1 << ISC10);	// Set it to interrupt on any logical change on INT1
 	EICRA &= ~(1 << ISC11);
+
+	EICRA |= (1 << ISC00) | ~(1<< ISC01);
+	EIMSK |= (1 << INT0);  //
 
 	EIMSK |= (1 << INT1); // enable interrupts
 	// TRIG Port
@@ -144,16 +148,34 @@ void trigger(){
 ISR(INT1_vect){
 
 	cli(); // prevent other things from happening
-	if (isEnabled(ECHO_PIN_PORT, ECHO_PIN)){
-		enable(PORTD, 5);
+	if (isEnabled(ECHO_PIN_PORT, 3)){
+		// enable(PORTD, 5);
 		resetTimer16();
 		startTimer16();
 	}
 	else{
 		stopTimer16();
-		// setDist();
+		setDist();
 		// dist1 = TCNT1L | (TCNT1H << 4);
-		disable(PORTD, 5);
+		// disable(PORTD, 5);
+	}
+
+
+	sei();
+}
+ISR(INT0_vect){
+
+	cli(); // prevent other things from happening
+	if (isEnabled(ECHO_PIN_PORT, 2)){
+		// enable(PORTD, 5);
+		resetTimer16();
+		startTimer16();
+	}
+	else{
+		stopTimer16();
+		setDist();
+		// dist1 = TCNT1L | (TCNT1H << 4);
+		// disable(PORTD, 5);
 	}
 
 

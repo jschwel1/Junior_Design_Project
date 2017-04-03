@@ -31,6 +31,13 @@ int main(){
 		_delay_ms(100);
 		moveToNextSensor();
 		trigger();
+
+		// if(getDist2()<300 && getDist2()>200){
+		// 	enable(LED_PORT,LED1);
+		// }
+		// else{
+		// 	disable(LED_PORT,LED1);
+		// }
 	}
 
 // 	sei();

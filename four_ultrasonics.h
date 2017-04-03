@@ -55,7 +55,7 @@
 #define TRIG_PORT PORTD
 #define TRIG_PORT_DDR DDRD
 #define TRIG1 4
-#define TRIG2 2
+#define TRIG2 6
 #define TRIG3 1
 #define TRIG4 0
 
