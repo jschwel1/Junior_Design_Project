@@ -22,31 +22,31 @@
 #define PROX_TIME PROX_DIST*148
 
 // TCCR1A
-#define COM1A1 7 // Leave both ports to normal operation
-#define COM1A0 6
-#define COM1B1 5
-#define COM1B0 4
-#define WGM11 1
-#define WGM10 0
-
-// TCCR1B
-#define ICNC1 7
-#define ICES1 6
-#define WGM13 4
-#define WGM12 3
-#define CS12 2
-#define CS11 1
-#define CS10 0
+// #define COM1A1 7 // Leave both ports to normal operation
+// #define COM1A0 6
+// #define COM1B1 5
+// #define COM1B0 4
+// #define WGM11 1
+// #define WGM10 0
+//
+// // TCCR1B
+// #define ICNC1 7
+// #define ICES1 6
+// #define WGM13 4
+// #define WGM12 3
+// #define CS12 2
+// #define CS11 1
+// #define CS10 0
 
 // TCCR1C
-#define FOC1A 7
-#define FOC1B 6
+// #define FOC1A 7
+// #define FOC1B 6
 
 // TIMSK1
-#define ICIE1 5 // Input capture IE
-#define OCIE1B 2 // OCRB Match IE
-#define OSIE1A 1 // OCRA Match IO
-#define TOIE1 0  // Overflow IE
+// #define ICIE1 5 // Input capture IE
+// #define OCIE1B 2 // OCRB Match IE
+// #define OSIE1A 1 // OCRA Match IO
+// #define TOIE1 0  // Overflow IE
 
 // Ultrasonic stuff
 #define ECHO_PIN_PORT PIND
@@ -61,17 +61,17 @@
 
 // Interrupt
 // EICRA
-#define ISC11 3
-#define ISC10 2
-// EIMSK
-#define INT1 1
-// EIFR
-#define INTF1 1
+// #define ISC11 3
+// #define ISC10 2
+// // EIMSK
+// #define INT1 1
+// // EIFR
+// #define INTF1 1
 
 
 #define enable(port, pin) ((port) |= (1 << (pin)))
 #define disable(port, pin) ((port) &= ~(1 << (pin)))
-#define isEnabled(port, pin) (((port) & (1 << (pin)))) 
+#define isEnabled(port, pin) (((port) & (1 << (pin))))
 
 void initializeTimer16();
 void initializeUltraSonic();

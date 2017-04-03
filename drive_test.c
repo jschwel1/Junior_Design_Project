@@ -16,19 +16,20 @@ void startupSequence();
 
 int main(){
 
-
 	initializeTimer16();
  	initializeUltraSonic();
-	initializeShiftReg();
+	// initializeShiftReg();
 
 	LED_PORT_DDRD |= (1<<LED1);
 
-	startupSequence();
-
+	// startupSequence();
+	sei();
+	// trigger();
 	while(1){
-		push(getDist1());
+		// push(getDist1());
 
 		_delay_ms(100);
+		moveToNextSensor();
 		trigger();
 	}
 
@@ -92,10 +93,10 @@ void startupSequence(){
 	_delay_ms(200);
 
 	uint8_t i;
-	for (i = 0; i < 255; i++){
-		push(i);
-		_delay_ms(25);
-	}
+	// for (i = 0; i < 255; i++){
+	// 	push(i);
+	// 	_delay_ms(5);
+	// }
 	push(0x00);
 
 
