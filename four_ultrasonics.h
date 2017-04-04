@@ -62,12 +62,7 @@
 #define ECHO4_PCINT PCINT23
 #define TRIG_PORT PORTD
 #define TRIG_PORT_DDR DDRD
-<<<<<<< HEAD
-#define TRIG1 4
-#define TRIG2 6
-#define TRIG3 1
-#define TRIG4 0
-=======
+
 #define TRIG1 0
 #define TRIG2 1
 #define TRIG3 2
@@ -87,11 +82,9 @@
 // Macro functions to easily set or clear pins
 #define enable(port, pin) ((port) |= (1 << (pin)))
 #define disable(port, pin) ((port) &= ~(1 << (pin)))
-<<<<<<< HEAD
-#define isEnabled(port, pin) (((port) & (1 << (pin))))
-=======
+
 // Macro function to easily see if a pin is high or low
-#define isEnabled(port, pin) (((port) & (1 << (pin)))) 
+#define isEnabled(port, pin) (((port) & (1 << (pin))))
 >>>>>>> origin/master
 
 void initializeTimer16();

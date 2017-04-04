@@ -30,20 +30,19 @@ void initializeTimer16(){
 }
 
 void initializeUltraSonic(){
-<<<<<<< HEAD
 	// External Interrupt & ECHO Pin
-	ECHO_PIN_PORT_DDR &= ~(1 << ECHO_PIN) & ~(1<<2);
-	ECHO_PIN_PORT |= (1 << ECHO_PIN) | (1<<2); // Set pull up resistor high
+	// ECHO_PIN_PORT_DDR &= ~(1 << ECHO_PIN) & ~(1<<2);
+	// ECHO_PIN_PORT |= (1 << ECHO_PIN) | (1<<2); // Set pull up resistor high
+	//
+	//
+	// EICRA |= (1 << ISC10);	// Set it to interrupt on any logical change on INT1
+	// EICRA &= ~(1 << ISC11);
+	//
+	// EICRA |= (1 << ISC00) | ~(1<< ISC01);
+	// EIMSK |= (1 << INT0);  //
+	//
+	// EIMSK |= (1 << INT1); // enable interrupts
 
-
-	EICRA |= (1 << ISC10);	// Set it to interrupt on any logical change on INT1
-	EICRA &= ~(1 << ISC11);
-
-	EICRA |= (1 << ISC00) | ~(1<< ISC01);
-	EIMSK |= (1 << INT0);  //
-
-	EIMSK |= (1 << INT1); // enable interrupts
-=======
 	// Set all echos to inputs (DDR = '0')
 	disable(ECHO_PIN_DDR, ECHO1);
 	disable(ECHO_PIN_DDR, ECHO2);
@@ -54,7 +53,7 @@ void initializeUltraSonic(){
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
-	
+
 	// Set the PCINT settings
 	// Pin Change Interrupt Control Register for Pins 23->16
 	enable(PCICR, PCIE2);
@@ -63,8 +62,6 @@ void initializeUltraSonic(){
 	enable(PCMSK2, ECHO3_PCINT); // ECHO3
 	enable(PCMSK2, ECHO4_PCINT); // ECHO4
 
-
->>>>>>> origin/master
 	// TRIG Port
 	TRIG_PORT_DDR |= (1 << TRIG1) | (1 << TRIG2) | (1 << TRIG3) | (1 << TRIG4); // set TRIGs to
 										    // outputs
@@ -177,27 +174,19 @@ void trigger(){
 	disable(TRIG_PORT, getSensorTrigPin());
 }
 
-// INT1 ISR -> for echo pin
-<<<<<<< HEAD
-ISR(INT1_vect){
-
-	cli(); // prevent other things from happening
-	if (isEnabled(ECHO_PIN_PORT, 3)){
-		// enable(PORTD, 5);
-=======
 ISR(PCINT2_vect){
 	// Check the correct
 
 	cli(); // prevent other things from happening
-	if (isEnabled(ECHO_PIN, getSensorEchoPin())){
-		enable(TRIG_PORT, TRIG2);
->>>>>>> origin/master
+	if (isEnabled(ECHO_PIN, ECHO2)){
+		// enable(TRIG_PORT, TRIG2);
 		resetTimer16();
 		startTimer16();
 	}
 	else{
 		stopTimer16();
-		setDist();
+		// setDist();
+		dist2 = TCNT1L | (TCNT1H << 8);
 		// dist1 = TCNT1L | (TCNT1H << 4);
 		// disable(PORTD, 5);
 	}
@@ -205,24 +194,34 @@ ISR(PCINT2_vect){
 
 	sei();
 }
-ISR(INT0_vect){
 
-	cli(); // prevent other things from happening
-	if (isEnabled(ECHO_PIN_PORT, 2)){
-		// enable(PORTD, 5);
-		resetTimer16();
-		startTimer16();
-	}
-	else{
-		stopTimer16();
-		setDist();
-		// dist1 = TCNT1L | (TCNT1H << 4);
-		// disable(PORTD, 5);
-	}
+// INT1 ISR -> for echo pin
 
-
-	sei();
-}
+// ISR(INT1_vect){
+//
+// 	cli(); // prevent other things from happening
+// 	if (isEnabled(ECHO_PIN_PORT, 3)){
+// 		// enable(PORTD, 5);
+//
+//
+// ISR(INT0_vect){
+//
+// 	cli(); // prevent other things from happening
+// 	if (isEnabled(ECHO_PIN_PORT, 2)){
+// 		// enable(PORTD, 5);
+// 		resetTimer16();
+// 		startTimer16();
+// 	}
+// 	else{
+// 		stopTimer16();
+// 		setDist();
+// 		// dist1 = TCNT1L | (TCNT1H << 4);
+// 		// disable(PORTD, 5);
+// 	}
+//
+//
+// 	sei();
+// }
 
 
 uint16_t getDist1(){
