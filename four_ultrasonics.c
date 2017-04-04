@@ -30,6 +30,7 @@ void initializeTimer16(){
 }
 
 void initializeUltraSonic(){
+<<<<<<< HEAD
 	// External Interrupt & ECHO Pin
 	ECHO_PIN_PORT_DDR &= ~(1 << ECHO_PIN) & ~(1<<2);
 	ECHO_PIN_PORT |= (1 << ECHO_PIN) | (1<<2); // Set pull up resistor high
@@ -42,6 +43,28 @@ void initializeUltraSonic(){
 	EIMSK |= (1 << INT0);  //
 
 	EIMSK |= (1 << INT1); // enable interrupts
+=======
+	// Set all echos to inputs (DDR = '0')
+	disable(ECHO_PIN_DDR, ECHO1);
+	disable(ECHO_PIN_DDR, ECHO2);
+	disable(ECHO_PIN_DDR, ECHO3);
+	disable(ECHO_PIN_DDR, ECHO4);
+	// Set the pull up resistor high
+	enable(ECHO_PIN, ECHO1);
+	enable(ECHO_PIN, ECHO1);
+	enable(ECHO_PIN, ECHO1);
+	enable(ECHO_PIN, ECHO1);
+	
+	// Set the PCINT settings
+	// Pin Change Interrupt Control Register for Pins 23->16
+	enable(PCICR, PCIE2);
+	enable(PCMSK2, ECHO1_PCINT); // ECHO1
+	enable(PCMSK2, ECHO2_PCINT); // ECHO2
+	enable(PCMSK2, ECHO3_PCINT); // ECHO3
+	enable(PCMSK2, ECHO4_PCINT); // ECHO4
+
+
+>>>>>>> origin/master
 	// TRIG Port
 	TRIG_PORT_DDR |= (1 << TRIG1) | (1 << TRIG2) | (1 << TRIG3) | (1 << TRIG4); // set TRIGs to
 										    // outputs
@@ -119,6 +142,16 @@ uint8_t getSensorTrigPin(){
 	// default
 	return TRIG1;
 }
+uint8_t getSensorEchoPin(){
+	switch (ultraSonicStatus&0x03){ //current sensor is stored in 2 LSB
+		case 0: return ECHO1;
+		case 1: return ECHO2;
+		case 2: return ECHO3;
+		case 3: return ECHO4;
+	}
+	// default
+	return TRIG1;
+}
 void setDist(){
 	switch (ultraSonicStatus&0x03){ //current sensor is stored in 2 LSB
 		case 0: dist1 = TCNT1L | (TCNT1H << 8);
@@ -145,11 +178,20 @@ void trigger(){
 }
 
 // INT1 ISR -> for echo pin
+<<<<<<< HEAD
 ISR(INT1_vect){
 
 	cli(); // prevent other things from happening
 	if (isEnabled(ECHO_PIN_PORT, 3)){
 		// enable(PORTD, 5);
+=======
+ISR(PCINT2_vect){
+	// Check the correct
+
+	cli(); // prevent other things from happening
+	if (isEnabled(ECHO_PIN, getSensorEchoPin())){
+		enable(TRIG_PORT, TRIG2);
+>>>>>>> origin/master
 		resetTimer16();
 		startTimer16();
 	}

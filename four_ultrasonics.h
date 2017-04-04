@@ -48,16 +48,31 @@
 // #define OSIE1A 1 // OCRA Match IO
 // #define TOIE1 0  // Overflow IE
 
-// Ultrasonic stuff
-#define ECHO_PIN_PORT PIND
-#define ECHO_PIN_PORT_DDR DDRD
-#define ECHO_PIN 3			// Echo pin on INT1
+// Ultrasonic stuff -- Using PORTD
+// PORTD contains PCINT(23:16) -> PCMSK2
+#define ECHO_PIN PIND
+#define ECHO_PIN_DDR DDRD
+#define ECHO1 4 // PCINT20
+#define ECHO1_PCINT PCINT20
+#define ECHO2 5 // PCINT21
+#define ECHO2_PCINT PCINT21
+#define ECHO3 6 // PCINT22
+#define ECHO3_PCINT PCINT22
+#define ECHO4 7 // PCINT23
+#define ECHO4_PCINT PCINT23
 #define TRIG_PORT PORTD
 #define TRIG_PORT_DDR DDRD
+<<<<<<< HEAD
 #define TRIG1 4
 #define TRIG2 6
 #define TRIG3 1
 #define TRIG4 0
+=======
+#define TRIG1 0
+#define TRIG2 1
+#define TRIG3 2
+#define TRIG4 3
+>>>>>>> origin/master
 
 // Interrupt
 // EICRA
@@ -69,9 +84,15 @@
 // #define INTF1 1
 
 
+// Macro functions to easily set or clear pins
 #define enable(port, pin) ((port) |= (1 << (pin)))
 #define disable(port, pin) ((port) &= ~(1 << (pin)))
+<<<<<<< HEAD
 #define isEnabled(port, pin) (((port) & (1 << (pin))))
+=======
+// Macro function to easily see if a pin is high or low
+#define isEnabled(port, pin) (((port) & (1 << (pin)))) 
+>>>>>>> origin/master
 
 void initializeTimer16();
 void initializeUltraSonic();
@@ -95,6 +116,7 @@ void setCompare1A(uint16_t comp);
 uint8_t isStage(uint8_t stage);
 void nextStage();
 uint8_t getSensorTrigPin();
+uint8_t getSensorEchoPin();
 void moveToNextSensor();
 void trigger();
 void setDist();
