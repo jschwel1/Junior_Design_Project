@@ -60,14 +60,14 @@
 #define ECHO3_PCINT PCINT22
 #define ECHO4 7 // PCINT23
 #define ECHO4_PCINT PCINT23
-#define TRIG_PORT PORTD
-#define TRIG_PORT_DDR DDRD
 
+#define TRIG_PORT PORTC
+#define TRIG_PORT_DDR DDRC
 #define TRIG1 0
 #define TRIG2 1
 #define TRIG3 2
 #define TRIG4 3
->>>>>>> origin/master
+
 
 // Interrupt
 // EICRA
@@ -85,7 +85,6 @@
 
 // Macro function to easily see if a pin is high or low
 #define isEnabled(port, pin) (((port) & (1 << (pin))))
->>>>>>> origin/master
 
 void initializeTimer16();
 void initializeUltraSonic();
@@ -96,18 +95,8 @@ void startTimer16_PS8();
 void resetTimer16();
 void setCompare1A(uint16_t comp);
 
-//void enable(volatile unsigned char *port, uint8_t pin);
-//void disable(volatile unsigned char *port, uint8_t pin);
-//uint8_t isEnabled(uint8_t port, uint8_t pin);
-/* Ultrasonic stages:
-	1 - Enable trigger, reset timer, OCR1A = 10ms
-	2 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
-	3 - Waiting for echo to go high
-	  - Could also timeout -> ignore time/dist, continue to next sensor
-	4 - Waiting for echo to go low
-*/
-uint8_t isStage(uint8_t stage);
-void nextStage();
+
+
 uint8_t getSensorTrigPin();
 uint8_t getSensorEchoPin();
 void moveToNextSensor();

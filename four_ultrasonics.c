@@ -49,11 +49,16 @@ void initializeUltraSonic(){
 	disable(ECHO_PIN_DDR, ECHO3);
 	disable(ECHO_PIN_DDR, ECHO4);
 	// Set the pull up resistor high
+	/*
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
-
+	*/
+	disable(ECHO_PIN, ECHO1);
+	disable(ECHO_PIN, ECHO2);
+	disable(ECHO_PIN, ECHO3);
+	disable(ECHO_PIN, ECHO4);
 	// Set the PCINT settings
 	// Pin Change Interrupt Control Register for Pins 23->16
 	enable(PCICR, PCIE2);
@@ -77,6 +82,8 @@ void initializeUltraSonic(){
 	resetTimer16();
 	setCompare1A(CLKS_PER_DELAY);
 	startTimer16_PS8();
+
+	DDRB |= (0x02);
 }
 
 void stopTimer16(){
@@ -100,34 +107,8 @@ void resetTimer16(){
 	TCNT1H = 0x00;
 	TCNT1L = 0x00;
 }
-/*
-void enable(uint8_t port, uint8_t pin){
-	port |= (1 << pin);
-}
-void disable(uint8_t port, uint8_t pin){
-	port &= ~(1 << pin);
-}
 
-uint8_t isEnabled(uint8_t port, uint8_t pin){
-	return port&(1<<pin);
-}
-*/
-/* Ultrasonic stages:
-	0 - Enable trigger, reset timer, OCR1A = 10ms
-	1 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
-	2 - Waiting for echo to go high
-	  - Could also timeout -> ignore time/dist, continue to next sensor
-	3 - Waiting for echo to go low
-*/
-uint8_t isStage(uint8_t stage){
-	return (((ultraSonicStatus&0xC0) >> 6) == stage);
-}
-void nextStage(){
-	uint8_t next = 0x03&(((ultraSonicStatus&0xC0) >> 6)+1); // increment the current stage
-	ultraSonicStatus &= 0x3F;	//clear the stage section
-	ultraSonicStatus |= (next << 6); // place the stage in the correct position
 
-}
 
 uint8_t getSensorTrigPin(){
 	switch (ultraSonicStatus&0x03){ //current sensor is stored in 2 LSB
@@ -176,52 +157,29 @@ void trigger(){
 
 ISR(PCINT2_vect){
 	// Check the correct
-
+	
 	cli(); // prevent other things from happening
-	if (isEnabled(ECHO_PIN, ECHO2)){
-		// enable(TRIG_PORT, TRIG2);
+	if (isEnabled(ECHO_PIN, ECHO1) || isEnabled(ECHO_PIN, ECHO2) || isEnabled(ECHO_PIN, ECHO3) || isEnabled(ECHO_PIN, ECHO4)){
+		//enable(PORTB, 1);
+		PORTB ^= 0x02;
 		resetTimer16();
 		startTimer16();
 	}
 	else{
 		stopTimer16();
+		//disable(PORTB, 1);
+		PORTB ^= 0x02;
 		// setDist();
-		dist2 = TCNT1L | (TCNT1H << 8);
-		// dist1 = TCNT1L | (TCNT1H << 4);
-		// disable(PORTD, 5);
+//		dist2 = TCNT1L | (TCNT1H << 8);
+		setDist();
+		
 	}
-
+	
 
 	sei();
 }
 
-// INT1 ISR -> for echo pin
 
-// ISR(INT1_vect){
-//
-// 	cli(); // prevent other things from happening
-// 	if (isEnabled(ECHO_PIN_PORT, 3)){
-// 		// enable(PORTD, 5);
-//
-//
-// ISR(INT0_vect){
-//
-// 	cli(); // prevent other things from happening
-// 	if (isEnabled(ECHO_PIN_PORT, 2)){
-// 		// enable(PORTD, 5);
-// 		resetTimer16();
-// 		startTimer16();
-// 	}
-// 	else{
-// 		stopTimer16();
-// 		setDist();
-// 		// dist1 = TCNT1L | (TCNT1H << 4);
-// 		// disable(PORTD, 5);
-// 	}
-//
-//
-// 	sei();
-// }
 
 
 uint16_t getDist1(){
