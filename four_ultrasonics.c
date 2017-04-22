@@ -19,28 +19,46 @@ void initializeTimer16(){
 		& ~(1 << WGM11) & ~(1 << WGM10); // Normal Counter
 
 	TCCR1B &= ~(1 << WGM13) & ~(1 << WGM12) // Normal Counter
-		& ~(1 << ICNC1) & ~(1 << ICES1) // No input capture 
+		& ~(1 << ICNC1) & ~(1 << ICES1) // No input capture
 		& ~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10); // Timer initially stopped
 
 	TCCR1C &= ~(1 << FOC1A) & ~(1 << FOC1B);// They need to be 0 anyway
-	
+
 	TIMSK1 &= ~(1 << ICIE1) & ~(1 << TOIE1) & ~(1 << OCIE1B); // No Input Capture or overflow interrupts
 	TIMSK1 |= (1 << OCIE1A);// | (1 << OCIO1B); // Interrupt on compare outputs with A and B
 						 // Stored in OCR1AH|ORCR1AL, OCR1BH|OCR1BL
 }
 
 void initializeUltraSonic(){
+	// External Interrupt & ECHO Pin
+	// ECHO_PIN_PORT_DDR &= ~(1 << ECHO_PIN) & ~(1<<2);
+	// ECHO_PIN_PORT |= (1 << ECHO_PIN) | (1<<2); // Set pull up resistor high
+	//
+	//
+	// EICRA |= (1 << ISC10);	// Set it to interrupt on any logical change on INT1
+	// EICRA &= ~(1 << ISC11);
+	//
+	// EICRA |= (1 << ISC00) | ~(1<< ISC01);
+	// EIMSK |= (1 << INT0);  //
+	//
+	// EIMSK |= (1 << INT1); // enable interrupts
+
 	// Set all echos to inputs (DDR = '0')
 	disable(ECHO_PIN_DDR, ECHO1);
 	disable(ECHO_PIN_DDR, ECHO2);
 	disable(ECHO_PIN_DDR, ECHO3);
 	disable(ECHO_PIN_DDR, ECHO4);
 	// Set the pull up resistor high
+	/*
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
 	enable(ECHO_PIN, ECHO1);
-	
+	*/
+	disable(ECHO_PIN, ECHO1);
+	disable(ECHO_PIN, ECHO2);
+	disable(ECHO_PIN, ECHO3);
+	disable(ECHO_PIN, ECHO4);
 	// Set the PCINT settings
 	// Pin Change Interrupt Control Register for Pins 23->16
 	enable(PCICR, PCIE2);
@@ -49,10 +67,9 @@ void initializeUltraSonic(){
 	enable(PCMSK2, ECHO3_PCINT); // ECHO3
 	enable(PCMSK2, ECHO4_PCINT); // ECHO4
 
-
 	// TRIG Port
 	TRIG_PORT_DDR |= (1 << TRIG1) | (1 << TRIG2) | (1 << TRIG3) | (1 << TRIG4); // set TRIGs to
-										    // outputs	
+										    // outputs
 	// Turn off all trigger pins
 	disable(TRIG_PORT, TRIG1);
 	disable(TRIG_PORT, TRIG2);
@@ -60,11 +77,13 @@ void initializeUltraSonic(){
 	disable(TRIG_PORT, TRIG4);
 
 
-
+	ultraSonicStatus = 0x00;
 	// clear timer, set compare to delay time, and start timer
 	resetTimer16();
 	setCompare1A(CLKS_PER_DELAY);
 	startTimer16_PS8();
+
+	DDRB |= (0x02);
 }
 
 void stopTimer16(){
@@ -88,34 +107,8 @@ void resetTimer16(){
 	TCNT1H = 0x00;
 	TCNT1L = 0x00;
 }
-/*
-void enable(uint8_t port, uint8_t pin){
-	port |= (1 << pin);
-}
-void disable(uint8_t port, uint8_t pin){
-	port &= ~(1 << pin);
-}
 
-uint8_t isEnabled(uint8_t port, uint8_t pin){
-	return port&(1<<pin);
-}
-*/
-/* Ultrasonic stages:
-	0 - Enable trigger, reset timer, OCR1A = 10ms
-	1 - Disable trigger, reset timer, OCR1A = TIMEOUT, enable INT1
-	2 - Waiting for echo to go high 
-	  - Could also timeout -> ignore time/dist, continue to next sensor
-	3 - Waiting for echo to go low
-*/
-uint8_t isStage(uint8_t stage){
-	return (((ultraSonicStatus&0xC0) >> 6) == stage);
-}
-void nextStage(){
-	uint8_t next = 0x03&(((ultraSonicStatus&0xC0) >> 6)+1); // increment the current stage
-	ultraSonicStatus &= 0x3F;	//clear the stage section
-	ultraSonicStatus |= (next << 6); // place the stage in the correct position
 
-}
 
 uint8_t getSensorTrigPin(){
 	switch (ultraSonicStatus&0x03){ //current sensor is stored in 2 LSB
@@ -151,36 +144,42 @@ void setDist(){
 }
 
 void moveToNextSensor(){
-	uint8_t next = 0xFC&((ultraSonicStatus&0x03)+1);// (++sensor)%4
+	uint8_t next = 0x03&((ultraSonicStatus&0x03)+1);// (++sensor)%4
 	ultraSonicStatus &= 0xFC;
 	ultraSonicStatus |= next;
 }
 
 void trigger(){
-	enable(TRIG_PORT, TRIG1);
+	enable(TRIG_PORT, getSensorTrigPin());
 	_delay_ms(10);
-	disable(TRIG_PORT, TRIG1);
+	disable(TRIG_PORT, getSensorTrigPin());
 }
 
-// INT1 ISR -> for echo pin
 ISR(PCINT2_vect){
 	// Check the correct
-
+	
 	cli(); // prevent other things from happening
-	if (isEnabled(ECHO_PIN, getSensorEchoPin())){
-		enable(TRIG_PORT, TRIG2);
+	if (isEnabled(ECHO_PIN, ECHO1) || isEnabled(ECHO_PIN, ECHO2) || isEnabled(ECHO_PIN, ECHO3) || isEnabled(ECHO_PIN, ECHO4)){
+		//enable(PORTB, 1);
+		PORTB ^= 0x02;
 		resetTimer16();
 		startTimer16();
 	}
 	else{
 		stopTimer16();
-		dist1 = TCNT1L | (TCNT1H << 4);
-		disable(TRIG_PORT, TRIG2);
+		//disable(PORTB, 1);
+		PORTB ^= 0x02;
+		// setDist();
+//		dist2 = TCNT1L | (TCNT1H << 8);
+		setDist();
+		
 	}
 	
-	
+
 	sei();
 }
+
+
 
 
 uint16_t getDist1(){
